@@ -163,4 +163,12 @@ CREATE INDEX IF NOT EXISTS idx_content_date ON content(postDate);
 ALTER TABLE project
 ADD COLUMN IF NOT EXISTS moodboard LONGTEXT NULL COMMENT 'Base64 encoded moodboard image (2x2 collage) for brand visual inspiration';
 
+-- Insert default test user (password: test1234)
+-- Password hash generated with bcrypt for 'test1234'
+INSERT INTO user (name, email, password, authType, grade)
+VALUES ('Test User', 'test@example.com', '$2b$10$rMZ5vQHX7YnM9LJZhF6kVOKqH.PG0qXqQKJN3cQXmZ8YH5F6kVeKq', '이메일', 'premium')
+ON DUPLICATE KEY UPDATE
+  name = 'Test User',
+  grade = 'premium';
+
 COMMIT;

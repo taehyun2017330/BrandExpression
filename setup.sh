@@ -65,21 +65,32 @@ echo ""
 
 # Database Configuration
 echo -e "${YELLOW}2. Database Configuration${NC}"
-read -p "   MySQL Host [localhost]: " DB_HOST
-DB_HOST=${DB_HOST:-localhost}
-
-read -p "   MySQL Port [3306]: " DB_PORT
-DB_PORT=${DB_PORT:-3306}
-
-read -p "   Database Name [amond]: " DB_NAME
-DB_NAME=${DB_NAME:-amond}
-
-read -p "   MySQL User [root]: " DB_USER
-DB_USER=${DB_USER:-root}
-
-echo -n "   MySQL Password: "
-read -s DB_PASSWORD
+echo "   We'll use MySQL with the following defaults:"
+echo "   - Host: localhost"
+echo "   - Port: 3306"
+echo "   - Database: amond"
+echo "   - User: root"
 echo ""
+read -p "   Use these defaults? (y/n) [y]: " USE_DEFAULTS
+USE_DEFAULTS=${USE_DEFAULTS:-y}
+
+if [ "$USE_DEFAULTS" = "y" ] || [ "$USE_DEFAULTS" = "Y" ]; then
+    DB_HOST="localhost"
+    DB_PORT=3306
+    DB_NAME="amond"
+    DB_USER="root"
+    echo -n "   Enter MySQL root password (or press Enter if no password): "
+    read -s DB_PASSWORD
+    echo ""
+else
+    read -p "   MySQL Host: " DB_HOST
+    read -p "   MySQL Port: " DB_PORT
+    read -p "   Database Name: " DB_NAME
+    read -p "   MySQL User: " DB_USER
+    echo -n "   MySQL Password: "
+    read -s DB_PASSWORD
+    echo ""
+fi
 echo ""
 
 # AWS S3 (Optional)
