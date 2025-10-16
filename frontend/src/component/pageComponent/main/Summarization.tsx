@@ -1423,7 +1423,7 @@ export default function Summarization({
               color: '#888'
             }}>
               <Typography sx={{ fontSize: '1rem', mb: 1 }}>
-                오른쪽 <strong>"만들기"</strong> 버튼을 눌러 무드보드를 생성해보세요!
+                오른쪽 <strong>&quot;만들기&quot;</strong> 버튼을 눌러 무드보드를 생성해보세요!
               </Typography>
               <Typography sx={{ fontSize: '0.9rem', color: '#999' }}>
                 요약본의 시각적 스타일과 색상 데이터를 활용합니다.
