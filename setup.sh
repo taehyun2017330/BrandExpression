@@ -79,9 +79,8 @@ if [ "$USE_DEFAULTS" = "y" ] || [ "$USE_DEFAULTS" = "Y" ]; then
     DB_PORT=3306
     DB_NAME="amond"
     DB_USER="root"
-    echo -n "   Enter MySQL root password (or press Enter if no password): "
-    read -s DB_PASSWORD
-    echo ""
+    DB_PASSWORD="QkdwkWkd12@@"
+    echo "   Using default MySQL password"
 else
     read -p "   MySQL Host: " DB_HOST
     read -p "   MySQL Port: " DB_PORT

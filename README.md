@@ -33,9 +33,16 @@ Brand Expression helps small business owners and brand managers articulate their
 ## Prerequisites
 
 - Node.js (v18 or higher)
-- MySQL (v8.0 or higher)
+- MySQL (v8.0 or higher) with root password set to: `QkdwkWkd12@@`
 - OpenAI API key
 - AWS account (optional, for S3 image storage)
+
+**Important:** Before running the setup, configure your MySQL root password:
+
+```bash
+# Set MySQL root password
+mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'QkdwkWkd12@@';"
+```
 
 ## Quick Start
 
