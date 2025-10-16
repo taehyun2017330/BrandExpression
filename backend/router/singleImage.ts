@@ -2,8 +2,7 @@ import express from 'express';
 import OpenAI from 'openai';
 import { isLogin } from '../module/needAuth';
 import { queryAsync } from '../module/commonFunction';
-import { s3 } from '../module/aws';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { saveFile } from '../module/localStorage';
 import axios from 'axios';
 import moment from 'moment';
 import { canUserPerformAction, trackUsage } from '../module/usageTracking';
@@ -237,23 +236,16 @@ router.post('/generateSingleImage', isLogin, async (req, res) => {
       responseType: 'arraybuffer'
     });
     
-    // Generate filename for S3
+    // Generate filename and save to local storage
     const currentTime = moment().locale('en').format('YYYYMMDD_hhmmss_a');
     const fileName = `single_image_${currentTime}_${brandId}_${userId}.png`;
-    const s3Key = `single-images/${fileName}`;
-    
-    // Upload to S3
-    const uploadCommand = new PutObjectCommand({
-      Bucket: 'amond-image',
-      Key: s3Key,
-      Body: Buffer.from(imageResponse2.data),
-      ContentType: 'image/png',
-    });
-    
-    await s3.send(uploadCommand);
-    
-    // Use the S3 key as imageUrl (not the full URL)
-    const imageUrl = s3Key;
+
+    // Save to local storage
+    const imageUrl = await saveFile(
+      Buffer.from(imageResponse2.data),
+      fileName,
+      'single-images'
+    );
 
     // Get the project ID for this brand, or any project for the user
     let projectId: number;

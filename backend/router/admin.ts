@@ -3,7 +3,6 @@ const router = express.Router();
 import { queryAsync, transDecrypt } from "../module/commonFunction";
 import { isAdmin } from "../module/needAuth";
 import { itemNumber } from "../module/constant";
-import { getDownloadUrl } from "../module/aws";
 
 // ㅇ 유저
 // 유저 계정 목록
@@ -242,7 +241,11 @@ router.get("/content/getTotalNum", isAdmin, async function (req, res) {
 router.get("/content/image", isAdmin, async function (req, res) {
   try {
     const { key, fileName } = req.query;
-    const url = await getDownloadUrl(key as string, fileName as string);
+    // Images are now served directly from /uploads
+    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : process.env.BASE_URL || 'http://localhost:9988';
+    const url = `${baseUrl}/${key}`;
     res.status(200).json({ url });
   } catch (e) {
     console.error(e);
