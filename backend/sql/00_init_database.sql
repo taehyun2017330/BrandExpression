@@ -166,9 +166,10 @@ ADD COLUMN IF NOT EXISTS moodboard LONGTEXT NULL COMMENT 'Base64 encoded moodboa
 -- Insert default test user (password: test1234)
 -- Password hash generated with bcrypt for 'test1234'
 INSERT INTO user (name, email, password, authType, grade)
-VALUES ('Test User', 'test@example.com', '$2b$10$rMZ5vQHX7YnM9LJZhF6kVOKqH.PG0qXqQKJN3cQXmZ8YH5F6kVeKq', '이메일', 'premium')
+VALUES ('Test User', 'test@example.com', '$2b$10$CREO2ny2t/k6vjgcvhPau.HIKHdhNMhcZX1qJOqIEgf4KZdrcNijG', '???', 'premium')
 ON DUPLICATE KEY UPDATE
   name = 'Test User',
+  password = '$2b$10$CREO2ny2t/k6vjgcvhPau.HIKHdhNMhcZX1qJOqIEgf4KZdrcNijG',
   grade = 'premium';
 
 COMMIT;
