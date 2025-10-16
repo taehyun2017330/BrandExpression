@@ -6,7 +6,10 @@ import cookieParser from "cookie-parser";
 import { RedisStore } from "connect-redis";
 import { createClient } from "redis";
 
-const redisClient = createClient();
+// Create Redis client with Railway URL or default to localhost
+const redisClient = createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379'
+});
 redisClient.connect().catch(console.error);
 const redisStore = new RedisStore({
   client: redisClient,
