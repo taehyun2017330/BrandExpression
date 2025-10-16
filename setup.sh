@@ -66,7 +66,7 @@ echo ""
 # Database Configuration
 echo -e "${YELLOW}2. Database Configuration${NC}"
 echo "   We'll use MySQL with the following defaults:"
-echo "   - Host: localhost"
+echo "   - Host: 127.0.0.1"
 echo "   - Port: 3306"
 echo "   - Database: amond"
 echo "   - User: root"
@@ -75,7 +75,7 @@ read -p "   Use these defaults? (y/n) [y]: " USE_DEFAULTS
 USE_DEFAULTS=${USE_DEFAULTS:-y}
 
 if [ "$USE_DEFAULTS" = "y" ] || [ "$USE_DEFAULTS" = "Y" ]; then
-    DB_HOST="localhost"
+    DB_HOST="127.0.0.1"
     DB_PORT=3306
     DB_NAME="amond"
     DB_USER="root"
