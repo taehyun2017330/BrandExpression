@@ -197,8 +197,10 @@ if eval "$TEST_CMD" > /dev/null 2>&1; then
     echo "Initializing database..."
     if [ -z "$DB_PASSWORD" ]; then
         mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} < backend/sql/00_init_database.sql 2>&1 | grep -v "Warning" || true
+        mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} < backend/sql/01_fix_authtype_size.sql 2>&1 | grep -v "Warning" || true
     else
         mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} -p${DB_PASSWORD} < backend/sql/00_init_database.sql 2>&1 | grep -v "Warning" || true
+        mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} -p${DB_PASSWORD} < backend/sql/01_fix_authtype_size.sql 2>&1 | grep -v "Warning" || true
     fi
 
     echo -e "${GREEN}✓ Database initialized${NC}"
