@@ -596,6 +596,22 @@ url: ${projectData?.url || ''}
     // 콘텐츠 요청 - store selectedContentTypes instead of directionList
     const contentRequestSql = `INSERT INTO contentRequest(trendIssue, snsEvent, essentialKeyword, competitor, uploadCycle, toneMannerList, directionList, searchResult, searchToken, subjectToken, mainColor, createdAt, fk_projectId)
     VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?);`;
+
+    console.log('[CONTENT] Inserting contentRequest with values:', {
+      trendIssue: contentSettings.trendIssue || null,
+      snsEvent: contentSettings.snsEvent || null,
+      essentialKeyword: contentSettings.essentialKeyword || null,
+      competitor: contentSettings.competitor || null,
+      uploadCycle: contentSettings.uploadCycle,
+      toneMannerList: JSON.stringify(contentSettings.toneMannerList || []),
+      directionList: JSON.stringify(selectedContentTypes),
+      searchResultLength: searchResult?.length || 0,
+      searchToken,
+      subjectToken,
+      mainColor: brandData.mainColor || null,
+      projectId: decodeHashId(projectId),
+    });
+
     const contentRequestResult = await queryAsync(contentRequestSql, [
       contentSettings.trendIssue || null,
       contentSettings.snsEvent || null,
