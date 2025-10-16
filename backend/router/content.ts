@@ -71,16 +71,9 @@ router.post("/project", async function (req, res) {
         });
       }
     }
-    const presignedUrlList = [];
-    const entireDirectoryList = [];
-    for (const imageName of imageNameList) {
-      const { url, entireDirectory } = await uploadPresigned({
-        fileName: imageName,
-        directory: "user/project",
-      });
-      presignedUrlList.push(url);
-      entireDirectoryList.push(entireDirectory);
-    }
+    // No longer using presigned URLs - frontend uploads directly via /upload endpoint
+    // This endpoint is deprecated but kept for backwards compatibility
+    const imageFileNames = imageNameList || [];
 
     // First, check if a brand with this name exists for the user
     let brandId = null;
@@ -145,8 +138,8 @@ router.post("/project", async function (req, res) {
 
     res.status(200).json({
       projectId: hashId,
-      presignedUrlList,
       userId: userId || null,
+      imageFileNames: imageFileNames,
     });
   } catch (e: any) {
     console.error("Project creation error:", e);
@@ -331,18 +324,14 @@ router.post("/project/edit/image", isLogin, async function (req, res) {
   const { imageNameList } = req.body;
 
   try {
-    const presignedUrlList = [];
-    const entireDirectoryList = [];
-    for (const imageName of imageNameList) {
-      const { url, entireDirectory } = await uploadPresigned({
-        fileName: imageName,
-        directory: "user/project",
-      });
-      presignedUrlList.push(url);
-      entireDirectoryList.push(entireDirectory);
-    }
+    // No longer using presigned URLs - frontend uploads directly via /upload endpoint
+    // This endpoint is deprecated but kept for backwards compatibility
+    const imageFileNames = imageNameList || [];
 
-    res.status(200).json({ presignedUrlList, entireDirectoryList });
+    res.status(200).json({
+      success: true,
+      message: 'Please upload via /upload/multiple endpoint instead'
+    });
   } catch (e: any) {
     console.error("Project image upload error:", e);
     
@@ -945,7 +934,11 @@ router.get("/detail", isLogin, async function (req, res) {
 router.get("/image", isLogin, async function (req, res) {
   try {
     const { key, fileName } = req.query;
-    const url = await getDownloadUrl(key as string, fileName as string);
+    // Images are now served directly from /uploads, so just return the URL
+    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : process.env.BASE_URL || 'http://localhost:9988';
+    const url = `${baseUrl}/${key}`;
     res.status(200).json({ url });
   } catch (e) {
     console.error(e);
