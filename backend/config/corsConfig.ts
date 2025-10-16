@@ -11,6 +11,11 @@ const corsOptions = {
       "https://mond.io.kr",
       "https://app.mond.io.kr",
       "https://service.mond.io.kr",
+      // GitHub Pages
+      "https://taehyun2017330.github.io",
+      // Custom domain
+      "https://taehyun.me",
+      "https://www.taehyun.me",
       // AWS Amplify domains
       "https://main.dpvdj8dsmc7us.amplifyapp.com",
       "https://dpvdj8dsmc7us.amplifyapp.com",
