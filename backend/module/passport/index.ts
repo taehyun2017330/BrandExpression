@@ -49,29 +49,18 @@ passport.use(
 
       try {
         const result = await queryAsync(sql, [emailDuplicate]);
-        console.log(`[DEBUG] Login attempt - email: ${email}, emailDuplicate: ${emailDuplicate}`);
-        console.log(`[DEBUG] Query result count: ${result.length}`);
-
         if (result.length === 0) {
-          console.log(`[DEBUG] No user found`);
           return done(null, false, { message: "이메일을 다시 확인해주세요!" });
         }
 
-        console.log(`[DEBUG] User found - id: ${result[0].id}, authType: ${result[0].authType}`);
-        console.log(`[DEBUG] Password from input: ${password}`);
-        console.log(`[DEBUG] Password hash from DB: ${result[0].password}`);
-
         bcrypt.compare(password, result[0].password, (err, passResult) => {
-          console.log(`[DEBUG] bcrypt.compare result: ${passResult}, error: ${err}`);
           if (passResult) {
-            console.log(`[DEBUG] Login SUCCESS`);
             return done(null, {
               id: result[0].id,
               grade: result[0].grade,
               authType: result[0].authType,
             } as any);
           } else {
-            console.log(`[DEBUG] Password mismatch`);
             return done(null, false, {
               message: "비밀번호를 다시 확인해주세요!",
             });
