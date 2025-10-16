@@ -1,0 +1,162 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Deploy via SSM
+        id: deploy
+        run: |
+          # Create .env content
+          ENV_CONTENT=$(cat <<'EOL'
+          NODE_ENV=${{ secrets.NODE_ENV }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          CRYPTO_KEY=${{ secrets.CRYPTO_KEY }}
+          CRYPTO_DELETED_KEY=${{ secrets.CRYPTO_DELETED_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          KAKAO_REST_API=${{ secrets.KAKAO_REST_API }}
+          YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}
+          CHROME_BIN=/usr/local/bin/chromium
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          INICIS_PROD_MID=${{ secrets.INICIS_PROD_MID }}
+          INICIS_PROD_SIGN_KEY=${{ secrets.INICIS_PROD_SIGN_KEY }}
+          INICIS_PROD_API_KEY=${{ secrets.INICIS_PROD_API_KEY }}
+          INICIS_PROD_API_IV=${{ secrets.INICIS_PROD_API_IV }}
+          BILLING_CRON_SCHEDULE=${{ secrets.BILLING_CRON_SCHEDULE }}
+          EOL
+          )
+          
+          # Base64 encode the .env content to safely pass it through SSM
+          ENV_BASE64=$(echo "$ENV_CONTENT" | base64 -w 0)
+          
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "{\"commands\":[
+              \"#!/bin/bash\",
+              \"echo '=== Starting deployment ==='\",
+              \"# Set HOME environment variable\",
+              \"export HOME=/home/ec2-user\",
+              \"# Load the full user environment\",
+              \"source /home/ec2-user/.bash_profile || true\",
+              \"source /home/ec2-user/.bashrc || true\",
+              \"# Set up NVM and Node\",
+              \"export NVM_DIR='/home/ec2-user/.nvm'\",
+              \"[ -s \\\"\\$NVM_DIR/nvm.sh\\\" ] && . \\\"\\$NVM_DIR/nvm.sh\\\"\",
+              \"# Find and use Node directly if nvm doesn't work\",
+              \"if ! command -v npm &> /dev/null; then\",
+              \"  export PATH=/home/ec2-user/.nvm/versions/node/v*/bin:\\$PATH\",
+              \"  # Alternative: Use system node if available\",
+              \"  export PATH=/usr/local/bin:/usr/bin:\\$PATH\",
+              \"fi\",
+              \"# Verify npm is available\",
+              \"which npm || (echo 'npm not found!' && exit 1)\",
+              \"# Fix git ownership as root user\",
+              \"git config --global --add safe.directory '*'\",
+              \"cd /home/${{ secrets.EC2_USER }}/${{ secrets.EC2_FOLDER_NAME }}/backend || exit 1\",
+              \"echo '=== Current directory: '\",
+              \"pwd\",
+              \"echo '=== Pulling latest code from GitHub ==='\",
+              \"sudo -u ec2-user git fetch origin main\",
+              \"sudo -u ec2-user git reset --hard origin/main\",
+              \"echo '=== Creating .env file ==='\",
+              \"echo '$ENV_BASE64' | base64 -d > .env\",
+              \"chown ec2-user:ec2-user .env\",
+              \"echo '=== Installing dependencies ==='\",
+              \"sudo -u ec2-user npm install --production\",
+              \"echo '=== Building TypeScript (if needed) ==='\",
+              \"if [ -f tsconfig.json ]; then sudo -u ec2-user npm run build || echo 'No build script found'; fi\",
+              \"echo '=== Restarting application ==='\",
+              \"sudo -u ec2-user pm2 restart ${{ secrets.PM2_PROCESS_NAME }} --update-env || sudo -u ec2-user pm2 start app.ts --name ${{ secrets.PM2_PROCESS_NAME }}\",
+              \"sudo -u ec2-user pm2 save\",
+              \"echo '=== Deployment complete ==='\",
+              \"sudo -u ec2-user pm2 status\"
+            ]}" \
+            --timeout-seconds 600 \
+            --output text \
+            --query 'Command.CommandId')
+          
+          echo "command_id=$COMMAND_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for deployment
+        run: |
+          COMMAND_ID="${{ steps.deploy.outputs.command_id }}"
+          echo "Waiting for deployment command $COMMAND_ID to complete..."
+          
+          # Wait for command to complete
+          MAX_ATTEMPTS=60
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+              --query 'Status' \
+              --output text 2>/dev/null || echo "Pending")
+            
+            echo "Status: $STATUS"
+            
+            if [ "$STATUS" == "Success" ]; then
+              echo "✅ Deployment completed successfully!"
+              break
+            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "Cancelled" ] || [ "$STATUS" == "TimedOut" ]; then
+              echo "❌ Deployment failed with status: $STATUS"
+              
+              # Get error logs
+              echo "Error output:"
+              aws ssm get-command-invocation \
+                --command-id "$COMMAND_ID" \
+                --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+                --query 'StandardErrorContent' \
+                --output text
+              
+              exit 1
+            fi
+            
+            sleep 10
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+          
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "❌ Deployment timed out waiting for completion"
+            exit 1
+          fi
+
+      - name: Get deployment logs
+        if: always()
+        run: |
+          if [ -n "${{ steps.deploy.outputs.command_id }}" ]; then
+            echo "📋 Deployment output:"
+            aws ssm get-command-invocation \
+              --command-id "${{ steps.deploy.outputs.command_id }}" \
+              --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+              --query 'StandardOutputContent' \
+              --output text || echo "Could not retrieve output"
+          fi
