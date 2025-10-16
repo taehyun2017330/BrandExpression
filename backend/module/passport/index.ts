@@ -74,7 +74,13 @@ passport.use(
   )
 );
 
-kakao();
-google();
+// Only initialize OAuth strategies if credentials are provided
+if (process.env.KAKAO_REST_API) {
+  kakao();
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  google();
+}
 
 export default passport;
