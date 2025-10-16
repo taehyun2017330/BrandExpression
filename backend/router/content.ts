@@ -594,23 +594,8 @@ url: ${projectData?.url || ''}
     const subjectToken = subjectResult.totalToken;
 
     // 콘텐츠 요청 - store selectedContentTypes instead of directionList
-    const contentRequestSql = `INSERT INTO contentRequest(trendIssue, snsEvent, essentialKeyword, competitor, uploadCycle, toneMannerList, directionList, searchResult, searchToken, subjectToken, mainColor, createdAt, fk_projectId)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?);`;
-
-    console.log('[CONTENT] Inserting contentRequest with values:', {
-      trendIssue: contentSettings.trendIssue || null,
-      snsEvent: contentSettings.snsEvent || null,
-      essentialKeyword: contentSettings.essentialKeyword || null,
-      competitor: contentSettings.competitor || null,
-      uploadCycle: contentSettings.uploadCycle,
-      toneMannerList: JSON.stringify(contentSettings.toneMannerList || []),
-      directionList: JSON.stringify(selectedContentTypes),
-      searchResultLength: searchResult?.length || 0,
-      searchToken,
-      subjectToken,
-      mainColor: brandData.mainColor || null,
-      projectId: decodeHashId(projectId),
-    });
+    const contentRequestSql = `INSERT INTO contentRequest(trendIssue, snsEvent, essentialKeyword, competitor, uploadCycle, toneMannerList, imageVideoRatio, imageRatio, directionList, mainColor, searchResult, searchToken, subjectToken, createdAt, fk_projectId)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?);`;
 
     const contentRequestResult = await queryAsync(contentRequestSql, [
       contentSettings.trendIssue || null,
@@ -619,11 +604,13 @@ url: ${projectData?.url || ''}
       contentSettings.competitor || null,
       contentSettings.uploadCycle,
       JSON.stringify(contentSettings.toneMannerList || []),
+      null, // imageVideoRatio - not used anymore (all images)
+      '1:1', // imageRatio - default square format
       JSON.stringify(selectedContentTypes), // Store content types as directionList
+      brandData.mainColor || null,
       searchResult?.slice(0, 800) || null,
       searchToken,
       subjectToken,
-      brandData.mainColor || null,
       decodeHashId(projectId),
     ]);
 
