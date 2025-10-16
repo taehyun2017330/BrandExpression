@@ -120,7 +120,7 @@ router.post("/project", async function (req, res) {
       sessionName,
       category,
       url,
-      entireDirectoryList.join(","),
+      imageFileNames.join(","), // Changed from entireDirectoryList
       reasonList.join(","),
       description,
       userId || null,
