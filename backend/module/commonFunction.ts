@@ -178,16 +178,29 @@ export const loadPrompt = async (type: "1차" | "2차" | "이미지", body: any)
   }
 
   let answer = "";
+  let required = "";
+
   const loadPromptSql = `SELECT prompt, required FROM aiPrompt WHERE id = ?;`;
   const loadPromptResult = await queryAsync(loadPromptSql, [promptId]);
 
   if (!loadPromptResult || loadPromptResult.length === 0) {
-    console.error(`[loadPrompt] No prompt found with id: ${promptId}`);
-    throw new Error(`Prompt not found: ${promptId}`);
-  }
+    console.warn(`[loadPrompt] No prompt found with id: ${promptId}, using default prompt`);
 
-  answer = loadPromptResult[0].prompt;
-  const required = loadPromptResult[0].required;
+    // Provide default prompts for research mode
+    if (type === "1차") {
+      answer = "당신은 소셜 미디어 콘텐츠 전문가입니다. 제공된 브랜드 정보와 검색 결과를 바탕으로 인스타그램에 적합한 콘텐츠 주제를 생성해주세요.";
+      required = "{name},{description},{category}";
+    } else if (type === "2차") {
+      answer = "제공된 콘텐츠 주제를 바탕으로 매력적인 인스타그램 캡션을 작성해주세요. 해시태그도 포함해주세요.";
+      required = "";
+    } else if (type === "이미지") {
+      answer = "제공된 정보를 바탕으로 인스타그램에 적합한 이미지 생성 프롬프트를 작성해주세요.";
+      required = "";
+    }
+  } else {
+    answer = loadPromptResult[0].prompt;
+    required = loadPromptResult[0].required;
+  }
 
   // 2. 프롬프트 템플릿 대체
   if (type === "1차") {

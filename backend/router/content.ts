@@ -448,6 +448,21 @@ router.post("/request", isLogin, async function (req, res) {
       return res.status(400).json({ message: limitCheck.message });
     }
 
+    // Fetch project and brand data if projectData not provided
+    if (!projectData && projectId) {
+      const projectSql = `
+        SELECT p.*, b.name, b.category, b.url, b.description
+        FROM project p
+        LEFT JOIN brand b ON p.fk_brandId = b.id
+        WHERE p.id = ?
+      `;
+      const projectResult = await queryAsync(projectSql, [decodeHashId(projectId)]);
+      if (projectResult && projectResult.length > 0) {
+        projectData = projectResult[0];
+        console.log(`[CONTENT] Fetched project data from database for project ${projectId}`);
+      }
+    }
+
     // Save moodboard to project if provided in projectData
     if (projectData && projectData.moodboard && projectId) {
       const moodboardUpdateSql = `UPDATE project SET moodboard = ? WHERE id = ?`;
@@ -505,14 +520,14 @@ router.post("/request", isLogin, async function (req, res) {
         '건강/헬스': ['운동 루틴', '후기 사례', '클래스 안내', '식단 공유'],
         '기타': ['서비스/상품 소개', '창업 스토리', '기능 강조', '팔로우 이벤트']
       };
-      selectedContentTypes = (CONTENT_TYPES[projectData.category as string] || CONTENT_TYPES['기타']).slice(0, 4);
+      selectedContentTypes = (CONTENT_TYPES[projectData?.category as string] || CONTENT_TYPES['기타']).slice(0, 4);
     }
 
-    const webSearchPrompt = `사용자의 브랜드/상품명: ${projectData.name}
-url: ${projectData.url}
+    const webSearchPrompt = `사용자의 브랜드/상품명: ${projectData?.name || ''}
+url: ${projectData?.url || ''}
 경쟁사: ${contentSettings.competitor}
 트렌드 이슈: ${contentSettings.trendIssue}
-상세 내용: ${projectData.description?.slice(0, 500) || ""}`;
+상세 내용: ${projectData?.description?.slice(0, 500) || ""}`;
     const websearchRole = `사용자가 제공하는 url의 값, 경쟁사 관련 내용, 트렌드 이슈를 보고 중요한 핵심들을 뽑아줘! 링크나 출처 등의 정보는 필요 없어. 반드시 지우고, 내용들만 잘 추려줘!`;
 
     // webSearch의 경우 json 미지원
