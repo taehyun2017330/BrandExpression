@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INICIS 무인증서 빌링키 발급</title>
+    <script type="text/javascript" src="https://stgstdpay.inicis.com/stdjs/INIStdPay.js" charset="UTF-8"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>INICIS 무인증서 빌링키 발급</h1>
+    
+    <div class="info">
+        <h3>📌 인증서 없이 빌링키 발급하기</h3>
+        <p>아래 방법들은 공인인증서가 필요하지 않습니다:</p>
+        <ul>
+            <li>ISP 결제 (KB국민, 우리, SC제일은행 등)</li>
+            <li>안심클릭 (그 외 카드사)</li>
+            <li>간편결제 (카카오페이, 네이버페이 등)</li>
+        </ul>
+    </div>
+
+    <h2>방법 1: ISP/안심클릭 자동선택</h2>
+    <button onclick="requestBilling('auto')">자동선택 빌링키 발급</button>
+    
+    <h2>방법 2: ISP 결제 (KB국민, 우리은행 카드)</h2>
+    <button onclick="requestBilling('isp')">ISP 빌링키 발급</button>
+    
+    <h2>방법 3: 안심클릭 (그 외 카드)</h2>
+    <button onclick="requestBilling('ansim')">안심클릭 빌링키 발급</button>
+    
+    <h2>방법 4: 간편결제</h2>
+    <button onclick="requestBilling('kakao')">카카오페이</button>
+    <button onclick="requestBilling('naver')">네이버페이</button>
+    <button onclick="requestBilling('payco')">페이코</button>
+
+    <div id="result" class="result" style="display:none;"></div>
+
+    <!-- Payment Form -->
+    <form id="payForm" method="POST" style="display:none;">
+        <input type="hidden" name="version" value="1.0">
+        <input type="hidden" name="mid" value="INIBillTst">
+        <input type="hidden" name="oid" value="">
+        <input type="hidden" name="price" value="0">
+        <input type="hidden" name="timestamp" value="">
+        <input type="hidden" name="signature" value="">
+        <input type="hidden" name="mKey" value="">
+        <input type="hidden" name="currency" value="WON">
+        <input type="hidden" name="goodname" value="정기결제 서비스">
+        <input type="hidden" name="buyername" value="홍길동">
+        <input type="hidden" name="buyertel" value="01012341234">
+        <input type="hidden" name="buyeremail" value="test@test.com">
+        <input type="hidden" name="returnUrl" value="http://localhost:3000/billing-return">
+        <input type="hidden" name="closeUrl" value="http://localhost:3000/close.html">
+        <input type="hidden" name="gopaymethod" value="">
+        <input type="hidden" name="acceptmethod" value="">
+        <input type="hidden" name="charset" value="UTF-8">
+        <input type="hidden" name="languageView" value="ko">
+        <input type="hidden" name="payViewType" value="overlay">
+        <input type="hidden" name="merchantData" value="">
+    </form>
+
+    <script>
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        function getFormattedTimestamp() {
+            const now = new Date();
+            const pad = (n, length) => {
+                let str = '' + n;
+                while (str.length < length) {
+                    str = '0' + str;
+                }
+                return str;
+            };
+            
+            const yyyy = now.getFullYear().toString();
+            const MM = pad(now.getMonth() + 1, 2);
+            const dd = pad(now.getDate(), 2);
+            const hh = pad(now.getHours(), 2);
+            const mm = pad(now.getMinutes(), 2);
+            const ss = pad(now.getSeconds(), 2);
+            
+            return yyyy + MM + dd + hh + mm + ss;
+        }
+
+        async function requestBilling(type) {
+            const timestamp = Date.now().toString();
+            const oid = "BILL_" + getFormattedTimestamp() + "_" + type.toUpperCase();
+            const price = "0";
+            
+            // Set form values
+            document.getElementsByName("oid")[0].value = oid;
+            document.getElementsByName("timestamp")[0].value = timestamp;
+            
+            // Configure payment method based on type
+            let gopaymethod = "";
+            let acceptmethod = "";
+            
+            switch(type) {
+                case 'auto':
+                    // 자동선택 - ISP와 안심클릭 중 해당 카드에 맞는 것 선택
+                    gopaymethod = "Card";
+                    acceptmethod = "BILLAUTH(Card):below1000:no_receipt";
+                    break;
+                    
+                case 'isp':
+                    // ISP 전용
+                    gopaymethod = "Card";
+                    acceptmethod = "BILLAUTH(Card):ISP:below1000";
+                    break;
+                    
+                case 'ansim':
+                    // 안심클릭 전용
+                    gopaymethod = "Card";
+                    acceptmethod = "BILLAUTH(Card):Ansim:below1000";
+                    break;
+                    
+                case 'kakao':
+                    gopaymethod = "onlykakaopay";
+                    acceptmethod = "cardonly:BILLAUTH(Card)";
+                    break;
+                    
+                case 'naver':
+                    gopaymethod = "onlynaverpay";
+                    acceptmethod = "cardonly:BILLAUTH(Card)";
+                    break;
+                    
+                case 'payco':
+                    gopaymethod = "onlypayco";
+                    acceptmethod = "cardonly:BILLAUTH(Card)";
+                    break;
+            }
+            
+            document.getElementsByName("gopaymethod")[0].value = gopaymethod;
+            document.getElementsByName("acceptmethod")[0].value = acceptmethod;
+            
+            // Set merchant data
+            document.getElementsByName("merchantData")[0].value = JSON.stringify({
+                type: type,
+                billingType: "subscription"
+            });
+            
+            // Generate keys
+            const signKey = "SU5JTElURV9UUklQTEVERVNfS0VZU1RS";
+            const mKey = await sha256(signKey);
+            document.getElementsByName("mKey")[0].value = mKey;
+            
+            // Generate signature
+            const signatureData = "oid=" + oid + "&price=" + price + "&timestamp=" + timestamp;
+            const signature = await sha256(signatureData);
+            document.getElementsByName("signature")[0].value = signature;
+            
+            // Show what we're doing
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <h3>요청 정보</h3>
+                <p><strong>주문번호:</strong> ${oid}</p>
+                <p><strong>결제방법:</strong> ${gopaymethod}</p>
+                <p><strong>인증방법:</strong> ${acceptmethod}</p>
+                <p><strong>상태:</strong> 결제창 호출 중...</p>
+            `;
+            
+            console.log("Billing request:", {
+                type: type,
+                oid: oid,
+                gopaymethod: gopaymethod,
+                acceptmethod: acceptmethod
+            });
+            
+            try {
+                INIStdPay.pay('payForm');
+            } catch (e) {
+                console.error("Error:", e);
+                resultDiv.innerHTML += `<p style="color: red;"><strong>오류:</strong> ${e.message}</p>`;
+            }
+        }
+
+        // Listen for billing result
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'billing_key_result') {
+                const params = event.data.params;
+                const resultDiv = document.getElementById('result');
+                
+                if (params.resultCode === '0000' && params.billKey) {
+                    resultDiv.innerHTML += `
+                        <hr>
+                        <h3 style="color: green;">✅ 빌링키 발급 성공!</h3>
+                        <p><strong>빌링키:</strong> ${params.billKey}</p>
+                        <p><strong>카드정보:</strong> ${params.cardInfo || '카드정보'}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML += `
+                        <hr>
+                        <h3 style="color: red;">❌ 빌링키 발급 실패</h3>
+                        <p><strong>오류:</strong> ${params.resultMsg || '알 수 없는 오류'}</p>
+                    `;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

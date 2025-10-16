@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INICIS Debug Test</title>
+    <script type="text/javascript" src="https://stgstdpay.inicis.com/stdjs/INIStdPay.js" charset="UTF-8"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; }
+        button { padding: 10px 20px; margin: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>INICIS 빌링키 디버그 테스트</h1>
+    
+    <div id="log"></div>
+    
+    <button onclick="testBilling()">빌링키 발급 테스트</button>
+    <button onclick="checkForm()">폼 데이터 확인</button>
+    
+    <form id="billingForm" method="POST" style="border: 1px solid #ccc; padding: 10px; margin-top: 20px;">
+        <h3>Form Data (디버깅용 표시)</h3>
+        <input type="text" name="version" value="1.0" readonly><br>
+        <input type="text" name="mid" value="INIBillTst" readonly><br>
+        <input type="text" name="oid" value="" readonly><br>
+        <input type="text" name="price" value="0" readonly><br>
+        <input type="text" name="timestamp" value="" readonly><br>
+        <input type="text" name="signature" value="" readonly><br>
+        <input type="text" name="mKey" value="" readonly><br>
+        <input type="text" name="currency" value="WON" readonly><br>
+        <input type="text" name="goodname" value="빌링키 발급" readonly><br>
+        <input type="text" name="buyername" value="테스트" readonly><br>
+        <input type="text" name="buyertel" value="01012341234" readonly><br>
+        <input type="text" name="buyeremail" value="test@test.com" readonly><br>
+        <input type="text" name="returnUrl" value="http://localhost:3000/billing-return" readonly><br>
+        <input type="text" name="closeUrl" value="http://localhost:3000/close.html" readonly><br>
+        <input type="text" name="gopaymethod" value="Card" readonly><br>
+        <input type="text" name="acceptmethod" value="BILLAUTH(Card)" readonly><br>
+        <input type="text" name="charset" value="UTF-8" readonly><br>
+        <input type="text" name="languageView" value="ko" readonly><br>
+        <input type="text" name="payViewType" value="overlay" readonly><br>
+    </form>
+    
+    <script>
+        function log(message, isError = false) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log' + (isError ? ' error' : '');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            console.log(message);
+        }
+        
+        window.addEventListener('load', function() {
+            if (typeof INIStdPay !== 'undefined') {
+                log('✅ INICIS 스크립트 로드 성공', false);
+                log('INIStdPay 객체: ' + Object.keys(window.INIStdPay).join(', '));
+            } else {
+                log('❌ INICIS 스크립트 로드 실패', true);
+            }
+        });
+        
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+        
+        async function testBilling() {
+            log('빌링키 발급 시작...');
+            
+            try {
+                // Generate timestamp and OID
+                const timestamp = Date.now().toString();
+                const oid = "BILL_" + new Date().getTime();
+                
+                log(`OID: ${oid}`);
+                log(`Timestamp: ${timestamp}`);
+                
+                // Set form values
+                document.getElementsByName("oid")[0].value = oid;
+                document.getElementsByName("timestamp")[0].value = timestamp;
+                
+                // Generate mKey
+                const signKey = "SU5JTElURV9UUklQTEVERVNfS0VZU1RS";
+                const mKey = await sha256(signKey);
+                document.getElementsByName("mKey")[0].value = mKey;
+                log(`mKey: ${mKey}`);
+                
+                // Generate signature
+                const signatureData = `oid=${oid}&price=0&timestamp=${timestamp}`;
+                const signature = await sha256(signatureData);
+                document.getElementsByName("signature")[0].value = signature;
+                log(`Signature: ${signature}`);
+                
+                // Check if INIStdPay exists
+                if (typeof window.INIStdPay === 'undefined') {
+                    throw new Error('INIStdPay가 정의되지 않았습니다.');
+                }
+                
+                log('INIStdPay.pay() 호출 중...');
+                
+                // Try different ways to call
+                const form = document.getElementById('billingForm');
+                
+                // Method 1: Direct form element
+                window.INIStdPay.pay(form);
+                
+                // If that doesn't work, try form ID
+                // window.INIStdPay.pay('billingForm');
+                
+                log('INIStdPay.pay() 호출 완료');
+                
+            } catch (error) {
+                log(`오류 발생: ${error.message}`, true);
+                log(`스택: ${error.stack}`, true);
+            }
+        }
+        
+        function checkForm() {
+            const form = document.getElementById('billingForm');
+            const formData = new FormData(form);
+            log('=== 폼 데이터 ===');
+            for (let [key, value] of formData.entries()) {
+                log(`${key}: ${value}`);
+            }
+        }
+    </script>
+</body>
+</html>

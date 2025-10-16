@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INICIS Demo Style Payment</title>
+    <script type="text/javascript" src="https://stgstdpay.inicis.com/stdjs/INIStdPay.js" charset="UTF-8"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .demo-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #5f0080;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #7a0099;
+        }
+        .info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>INICIS 데모 스타일 결제</h1>
+    
+    <div class="info">
+        <h3>📌 테스트 정보</h3>
+        <p>이 페이지는 INICIS 데모와 동일한 파라미터를 사용합니다.</p>
+        <p>정기결제를 위한 빌링키 발급과 일반결제를 함께 테스트합니다.</p>
+    </div>
+
+    <div class="demo-box">
+        <h2>1. 일반 결제 (데모와 동일)</h2>
+        <p>HPP(1):below1000:va_receipt:centerCd(Y) 사용</p>
+        <button onclick="testRegularPayment()">일반 결제 테스트</button>
+    </div>
+
+    <div class="demo-box">
+        <h2>2. 정기결제용 빌링키 발급</h2>
+        <p>BILLAUTH 없이 일반결제 후 빌링키 추출 시도</p>
+        <button onclick="testBillingWithRegular()">정기결제 등록 (일반결제 방식)</button>
+    </div>
+
+    <div class="demo-box">
+        <h2>3. 혼합 방식</h2>
+        <p>일반결제 + BILLAUTH 혼합</p>
+        <button onclick="testMixedBilling()">혼합 방식 테스트</button>
+    </div>
+
+    <div id="result" class="result" style="display:none;"></div>
+
+    <!-- Form for payment -->
+    <form id="paymentForm" method="POST" style="display:none;">
+        <input type="hidden" name="version" value="1.0">
+        <input type="hidden" name="gopaymethod" value="">
+        <input type="hidden" name="mid" value="INIBillTst">
+        <input type="hidden" name="oid" value="">
+        <input type="hidden" name="price" value="1000">
+        <input type="hidden" name="timestamp" value="">
+        <input type="hidden" name="signature" value="">
+        <input type="hidden" name="mKey" value="">
+        <input type="hidden" name="currency" value="WON">
+        <input type="hidden" name="goodname" value="테스트상품">
+        <input type="hidden" name="buyername" value="테스터">
+        <input type="hidden" name="buyertel" value="01012345678">
+        <input type="hidden" name="buyeremail" value="test@test.com">
+        <input type="hidden" name="returnUrl" value="http://localhost:3000/billing-return">
+        <input type="hidden" name="closeUrl" value="http://localhost:3000/close.html">
+        <input type="hidden" name="acceptmethod" value="">
+        <input type="hidden" name="charset" value="UTF-8">
+        <input type="hidden" name="languageView" value="ko">
+        <input type="hidden" name="payViewType" value="overlay">
+        <input type="hidden" name="offerPeriod" value="">
+    </form>
+
+    <script>
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        async function setupPayment(gopaymethod, acceptmethod, offerPeriod = '') {
+            const timestamp = Date.now().toString();
+            const oid = "DemoTest_" + timestamp;
+            
+            // Set form values
+            document.getElementsByName("gopaymethod")[0].value = gopaymethod;
+            document.getElementsByName("oid")[0].value = oid;
+            document.getElementsByName("timestamp")[0].value = timestamp;
+            document.getElementsByName("acceptmethod")[0].value = acceptmethod;
+            document.getElementsByName("offerPeriod")[0].value = offerPeriod;
+            
+            // Generate keys
+            const signKey = "SU5JTElURV9UUklQTEVERVNfS0VZU1RS";
+            const mKey = await sha256(signKey);
+            document.getElementsByName("mKey")[0].value = mKey;
+            
+            // Generate signature
+            const signatureData = `oid=${oid}&price=1000&timestamp=${timestamp}`;
+            const signature = await sha256(signatureData);
+            document.getElementsByName("signature")[0].value = signature;
+            
+            showResult(`결제 요청 중...\nOID: ${oid}\nMethod: ${acceptmethod}`);
+            
+            try {
+                INIStdPay.pay('paymentForm');
+            } catch (e) {
+                showResult(`오류: ${e.message}`, true);
+            }
+        }
+
+        function testRegularPayment() {
+            // 데모와 완전히 동일한 파라미터
+            setupPayment('', 'HPP(1):below1000:va_receipt:centerCd(Y)', '');
+        }
+
+        function testBillingWithRegular() {
+            // 일반결제 방식으로 정기결제 시도 (M2 추가)
+            setupPayment('', 'HPP(1):below1000:va_receipt:centerCd(Y)', 'M2');
+        }
+
+        function testMixedBilling() {
+            // BILLAUTH를 acceptmethod 뒤에 추가
+            setupPayment('Card', 'HPP(1):below1000:va_receipt:centerCd(Y):BILLAUTH(Card)', 'M2');
+        }
+
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<pre style="color: ${isError ? 'red' : 'black'}">${message}</pre>`;
+        }
+
+        // Listen for payment result
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'payment_result') {
+                showResult('결제 결과:\n' + JSON.stringify(event.data.params, null, 2));
+            }
+        });
+    </script>
+</body>
+</html>

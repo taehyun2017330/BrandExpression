@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INICIS 월 정기결제 시스템</title>
+    <script type="text/javascript" src="https://stgstdpay.inicis.com/stdjs/INIStdPay.js" charset="UTF-8"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #333; }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .card-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .payment-history {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .payment-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .danger {
+            background-color: #f44336;
+        }
+        .danger:hover {
+            background-color: #d32f2f;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.active { background: #4CAF50; color: white; }
+        .status.pending { background: #ff9800; color: white; }
+        .status.failed { background: #f44336; color: white; }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 150px;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💳 월 정기결제 관리 시스템</h1>
+        
+        <!-- Step 1: 카드 등록 -->
+        <div class="section">
+            <h2>Step 1: 카드 등록 (카드 자동저장)</h2>
+            <p>먼저 정기결제에 사용할 카드를 등록합니다. 카드 정보가 자동으로 저장됩니다.</p>
+            
+            <div class="form-group">
+                <label>구독 상품:</label>
+                <select id="productSelect">
+                    <option value="basic">Basic - 월 9,900원</option>
+                    <option value="pro">Pro - 월 19,900원</option>
+                    <option value="premium">Premium - 월 39,900원</option>
+                </select>
+            </div>
+            
+            <button onclick="registerCard()">카드 등록하기</button>
+            
+            <div id="savedCard" class="card-info" style="display:none;">
+                <h3>등록된 카드 정보</h3>
+                <p><strong>카드번호:</strong> <span id="cardNumber"></span></p>
+                <p><strong>등록일:</strong> <span id="regDate"></span></p>
+                <p><strong>TID:</strong> <span id="savedTid"></span></p>
+                <button onclick="deleteCard()" class="danger">카드 삭제</button>
+            </div>
+        </div>
+
+        <!-- Step 2: 구독 관리 -->
+        <div class="section">
+            <h2>Step 2: 구독 관리</h2>
+            <div id="subscriptionInfo" style="display:none;">
+                <p><strong>구독 상태:</strong> <span class="status active">활성</span></p>
+                <p><strong>구독 상품:</strong> <span id="subProduct"></span></p>
+                <p><strong>월 결제액:</strong> <span id="monthlyAmount"></span>원</p>
+                <p><strong>다음 결제일:</strong> <span id="nextPaymentDate"></span></p>
+                
+                <button onclick="processMonthlyPayment()">지금 결제하기</button>
+                <button onclick="pauseSubscription()">구독 일시정지</button>
+                <button onclick="cancelSubscription()" class="danger">구독 취소</button>
+            </div>
+            
+            <div id="noSubscription" style="display:block;">
+                <p>등록된 카드가 없습니다. 먼저 카드를 등록해주세요.</p>
+            </div>
+        </div>
+
+        <!-- Step 3: 결제 내역 -->
+        <div class="section">
+            <h2>Step 3: 결제 내역</h2>
+            <div class="payment-history">
+                <div id="paymentHistory">
+                    <p style="color: #999;">결제 내역이 없습니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 자동 결제 시뮬레이션 -->
+        <div class="section">
+            <h2>자동 결제 시뮬레이션</h2>
+            <p>실제로는 서버에서 크론잡으로 실행됩니다.</p>
+            <button onclick="simulateMonthlyBatch()">월 정기결제 배치 실행</button>
+            <div id="batchResult" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <form id="payForm" method="POST" style="display:none;">
+        <input type="hidden" name="version" value="1.0">
+        <input type="hidden" name="gopaymethod" value="">
+        <input type="hidden" name="mid" value="INIBillTst">
+        <input type="hidden" name="oid" value="">
+        <input type="hidden" name="price" value="100">
+        <input type="hidden" name="timestamp" value="">
+        <input type="hidden" name="signature" value="">
+        <input type="hidden" name="mKey" value="">
+        <input type="hidden" name="currency" value="WON">
+        <input type="hidden" name="goodname" value="">
+        <input type="hidden" name="buyername" value="테스터">
+        <input type="hidden" name="buyertel" value="01012345678">
+        <input type="hidden" name="buyeremail" value="test@test.com">
+        <input type="hidden" name="returnUrl" value="http://localhost:3000/subscription-return">
+        <input type="hidden" name="closeUrl" value="http://localhost:3000/close.html">
+        <input type="hidden" name="acceptmethod" value="HPP(1):below1000:cardautostore">
+        <input type="hidden" name="charset" value="UTF-8">
+        <input type="hidden" name="languageView" value="ko">
+        <input type="hidden" name="payViewType" value="popup">
+        <input type="hidden" name="popupUrl" value="http://localhost:3000/popup.html">
+        <input type="hidden" name="merchantData" value="">
+    </form>
+
+    <script>
+        // 구독 정보 저장
+        let subscription = {
+            cardInfo: null,
+            product: null,
+            status: 'inactive',
+            nextPaymentDate: null,
+            paymentHistory: []
+        };
+
+        // 페이지 로드시 저장된 정보 복원
+        window.onload = function() {
+            const saved = localStorage.getItem('subscription_info');
+            if (saved) {
+                subscription = JSON.parse(saved);
+                updateUI();
+            }
+        };
+
+        // UI 업데이트
+        function updateUI() {
+            if (subscription.cardInfo) {
+                // 카드 정보 표시
+                document.getElementById('savedCard').style.display = 'block';
+                document.getElementById('cardNumber').textContent = subscription.cardInfo.cardNum || '****-****-****-****';
+                document.getElementById('regDate').textContent = subscription.cardInfo.regDate || new Date().toLocaleDateString();
+                document.getElementById('savedTid').textContent = subscription.cardInfo.tid || 'N/A';
+                
+                // 구독 정보 표시
+                document.getElementById('subscriptionInfo').style.display = 'block';
+                document.getElementById('noSubscription').style.display = 'none';
+                document.getElementById('subProduct').textContent = subscription.product?.name || 'Basic';
+                document.getElementById('monthlyAmount').textContent = (subscription.product?.price || 9900).toLocaleString();
+                document.getElementById('nextPaymentDate').textContent = subscription.nextPaymentDate || calculateNextPaymentDate();
+            } else {
+                document.getElementById('savedCard').style.display = 'none';
+                document.getElementById('subscriptionInfo').style.display = 'none';
+                document.getElementById('noSubscription').style.display = 'block';
+            }
+            
+            // 결제 내역 표시
+            updatePaymentHistory();
+        }
+
+        // 다음 결제일 계산
+        function calculateNextPaymentDate() {
+            const date = new Date();
+            date.setMonth(date.getMonth() + 1);
+            return date.toLocaleDateString();
+        }
+
+        // 결제 내역 업데이트
+        function updatePaymentHistory() {
+            const historyDiv = document.getElementById('paymentHistory');
+            if (subscription.paymentHistory.length === 0) {
+                historyDiv.innerHTML = '<p style="color: #999;">결제 내역이 없습니다.</p>';
+            } else {
+                historyDiv.innerHTML = subscription.paymentHistory.map(payment => `
+                    <div class="payment-item">
+                        <span class="status ${payment.status}">${payment.status}</span>
+                        <strong>${payment.date}</strong> - ${payment.amount}원
+                        <br><small>${payment.message}</small>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // SHA256 해시
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        // 카드 등록
+        async function registerCard() {
+            const productSelect = document.getElementById('productSelect');
+            const product = {
+                type: productSelect.value,
+                name: productSelect.value, // Use only English value, not Korean text
+                price: productSelect.value === 'basic' ? 9900 : 
+                       productSelect.value === 'pro' ? 19900 : 39900
+            };
+            
+            const timestamp = Date.now().toString();
+            const oid = "REG_" + timestamp;
+            
+            // Set form values
+            document.getElementsByName("oid")[0].value = oid;
+            document.getElementsByName("timestamp")[0].value = timestamp;
+            document.getElementsByName("goodname")[0].value = product.name + " 카드등록";
+            document.getElementsByName("merchantData")[0].value = JSON.stringify({
+                type: 'card_registration',
+                product: product
+            });
+            
+            // Generate keys
+            const signKey = "SU5JTElURV9UUklQTEVERVNfS0VZU1RS";
+            const mKey = await sha256(signKey);
+            document.getElementsByName("mKey")[0].value = mKey;
+            
+            // Generate signature
+            const signatureData = `oid=${oid}&price=100&timestamp=${timestamp}`;
+            const signature = await sha256(signatureData);
+            document.getElementsByName("signature")[0].value = signature;
+            
+            try {
+                INIStdPay.pay('payForm');
+            } catch (e) {
+                alert('오류: ' + e.message);
+            }
+        }
+
+        // 월 정기결제 처리
+        async function processMonthlyPayment() {
+            if (!subscription.cardInfo) {
+                alert('등록된 카드가 없습니다.');
+                return;
+            }
+            
+            const payment = {
+                date: new Date().toLocaleString(),
+                amount: subscription.product.price,
+                status: 'pending',
+                message: '결제 처리 중...'
+            };
+            
+            subscription.paymentHistory.unshift(payment);
+            updatePaymentHistory();
+            
+            // 실제로는 서버 API를 호출하여 저장된 카드 정보로 결제
+            try {
+                const response = await fetch('/api/subscription/charge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tid: subscription.cardInfo.tid,
+                        amount: subscription.product.price,
+                        product: subscription.product.name
+                    })
+                });
+                
+                if (response.ok) {
+                    payment.status = 'active';
+                    payment.message = '결제 완료';
+                    
+                    // 다음 결제일 업데이트
+                    subscription.nextPaymentDate = calculateNextPaymentDate();
+                } else {
+                    payment.status = 'failed';
+                    payment.message = '결제 실패';
+                }
+            } catch (error) {
+                // 데모용 - 성공 시뮬레이션
+                payment.status = 'active';
+                payment.message = '결제 완료 (데모)';
+                subscription.nextPaymentDate = calculateNextPaymentDate();
+            }
+            
+            saveSubscription();
+            updateUI();
+        }
+
+        // 월 배치 시뮬레이션
+        async function simulateMonthlyBatch() {
+            const resultDiv = document.getElementById('batchResult');
+            resultDiv.innerHTML = '<p>배치 작업 시작...</p>';
+            
+            // 시뮬레이션: 다음 결제일이 오늘인 모든 구독 처리
+            if (subscription.cardInfo && subscription.status === 'active') {
+                resultDiv.innerHTML += '<p>처리 대상: ' + subscription.product.name + '</p>';
+                await processMonthlyPayment();
+                resultDiv.innerHTML += '<p>✅ 처리 완료</p>';
+            } else {
+                resultDiv.innerHTML += '<p>처리 대상 없음</p>';
+            }
+        }
+
+        // 구독 일시정지
+        function pauseSubscription() {
+            subscription.status = 'paused';
+            saveSubscription();
+            alert('구독이 일시정지되었습니다.');
+            updateUI();
+        }
+
+        // 구독 취소
+        function cancelSubscription() {
+            if (confirm('정말 구독을 취소하시겠습니까?')) {
+                subscription.status = 'cancelled';
+                subscription.cardInfo = null;
+                saveSubscription();
+                alert('구독이 취소되었습니다.');
+                updateUI();
+            }
+        }
+
+        // 카드 삭제
+        function deleteCard() {
+            if (confirm('카드를 삭제하시겠습니까? 구독도 함께 취소됩니다.')) {
+                subscription.cardInfo = null;
+                subscription.status = 'inactive';
+                saveSubscription();
+                updateUI();
+            }
+        }
+
+        // 구독 정보 저장
+        function saveSubscription() {
+            localStorage.setItem('subscription_info', JSON.stringify(subscription));
+        }
+
+        // 결제 결과 수신
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'subscription_result') {
+                const result = event.data.params;
+                if (result.success) {
+                    subscription.cardInfo = {
+                        tid: result.tid,
+                        cardNum: result.cardNum,
+                        regDate: new Date().toLocaleDateString()
+                    };
+                    subscription.product = result.product;
+                    subscription.status = 'active';
+                    subscription.nextPaymentDate = calculateNextPaymentDate();
+                    
+                    // 첫 결제 기록
+                    subscription.paymentHistory.unshift({
+                        date: new Date().toLocaleString(),
+                        amount: 100,
+                        status: 'active',
+                        message: '카드 등록 확인 (100원)'
+                    });
+                    
+                    saveSubscription();
+                    updateUI();
+                    
+                    alert('카드가 성공적으로 등록되었습니다!\n\n다음 결제일: ' + subscription.nextPaymentDate);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

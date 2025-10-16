@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Monthly Payment System</title>
+    <script type="text/javascript" src="https://stgstdpay.inicis.com/stdjs/INIStdPay.js" charset="UTF-8"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #333; }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .card-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .hidden { display: none; }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Simple Monthly Payment System</h1>
+        
+        <!-- Debug Log -->
+        <div id="debugLog" class="section">
+            <h3>Debug Log</h3>
+            <div id="logContent"></div>
+        </div>
+        
+        <!-- Step 1: Register Card -->
+        <div class="section">
+            <h2>Step 1: Register Card (100원 인증)</h2>
+            <p>카드를 등록하면 매월 자동결제가 가능합니다.</p>
+            <button onclick="registerCard()">카드 등록하기</button>
+            
+            <div id="cardInfo" class="card-info hidden">
+                <h3>등록된 카드</h3>
+                <p>Order ID: <span id="orderId"></span></p>
+                <p>등록일: <span id="regDate"></span></p>
+            </div>
+        </div>
+        
+        <!-- Step 2: Monthly Payment -->
+        <div id="monthlySection" class="section hidden">
+            <h2>Step 2: Monthly Payment</h2>
+            <p>등록된 카드로 월 정기결제를 진행합니다.</p>
+            <button onclick="processMonthlyPayment()">이번 달 결제하기 (9,900원)</button>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <form id="payForm" method="POST" style="display:none;">
+        <input type="hidden" name="version" value="1.0">
+        <input type="hidden" name="gopaymethod" value="">
+        <input type="hidden" name="mid" value="INIBillTst">
+        <input type="hidden" name="oid" value="">
+        <input type="hidden" name="price" value="100">
+        <input type="hidden" name="timestamp" value="">
+        <input type="hidden" name="signature" value="">
+        <input type="hidden" name="mKey" value="">
+        <input type="hidden" name="currency" value="WON">
+        <input type="hidden" name="goodname" value="카드등록">
+        <input type="hidden" name="buyername" value="테스터">
+        <input type="hidden" name="buyertel" value="01012345678">
+        <input type="hidden" name="buyeremail" value="test@test.com">
+        <input type="hidden" name="returnUrl" value="http://localhost:3000/simple-return">
+        <input type="hidden" name="closeUrl" value="http://localhost:3000/close.html">
+        <input type="hidden" name="acceptmethod" value="HPP(1):below1000:cardautostore">
+        <input type="hidden" name="charset" value="UTF-8">
+        <input type="hidden" name="languageView" value="ko">
+        <input type="hidden" name="payViewType" value="overlay">
+    </form>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('logContent');
+            const entry = document.createElement('div');
+            entry.className = 'log';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            console.log(message);
+        }
+
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        async function registerCard() {
+            log('Starting card registration...');
+            
+            const timestamp = Date.now().toString();
+            const oid = "SIMPLE_" + timestamp;
+            
+            // Set form values
+            document.getElementsByName("oid")[0].value = oid;
+            document.getElementsByName("timestamp")[0].value = timestamp;
+            
+            // Generate keys
+            const signKey = "SU5JTElURV9UUklQTEVERVNfS0VZU1RS";
+            const mKey = await sha256(signKey);
+            document.getElementsByName("mKey")[0].value = mKey;
+            
+            // Generate signature
+            const signatureData = `oid=${oid}&price=100&timestamp=${timestamp}`;
+            const signature = await sha256(signatureData);
+            document.getElementsByName("signature")[0].value = signature;
+            
+            log(`Order ID: ${oid}`);
+            log('Opening payment window...');
+            
+            // Store order ID
+            localStorage.setItem('pending_order', oid);
+            
+            try {
+                INIStdPay.pay('payForm');
+            } catch (e) {
+                log('Error: ' + e.message);
+            }
+        }
+
+        function processMonthlyPayment() {
+            const savedOrder = localStorage.getItem('saved_order');
+            if (!savedOrder) {
+                alert('먼저 카드를 등록해주세요.');
+                return;
+            }
+            
+            log('Processing monthly payment for order: ' + savedOrder);
+            
+            // In real implementation, this would call your backend API
+            // to process the recurring payment using the saved order info
+            
+            alert('월 정기결제가 처리되었습니다.\n\n' +
+                  '주문번호: ' + savedOrder + '\n' +
+                  '결제금액: 9,900원\n\n' +
+                  '(실제 구현시 서버 API를 통해 처리됩니다)');
+                  
+            log('Monthly payment completed');
+        }
+
+        // Listen for payment result
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'payment_complete') {
+                log('Payment completed: ' + JSON.stringify(event.data.params));
+                
+                const orderId = event.data.params.orderId;
+                
+                // Save order info
+                localStorage.setItem('saved_order', orderId);
+                localStorage.removeItem('pending_order');
+                
+                // Update UI
+                document.getElementById('orderId').textContent = orderId;
+                document.getElementById('regDate').textContent = new Date().toLocaleDateString();
+                document.getElementById('cardInfo').classList.remove('hidden');
+                document.getElementById('monthlySection').classList.remove('hidden');
+                
+                log('Card registered successfully!');
+            }
+        });
+
+        // Check for saved card on load
+        window.onload = function() {
+            const savedOrder = localStorage.getItem('saved_order');
+            if (savedOrder) {
+                document.getElementById('orderId').textContent = savedOrder;
+                document.getElementById('regDate').textContent = 'Previously registered';
+                document.getElementById('cardInfo').classList.remove('hidden');
+                document.getElementById('monthlySection').classList.remove('hidden');
+                log('Found saved card: ' + savedOrder);
+            }
+        };
+    </script>
+</body>
+</html>

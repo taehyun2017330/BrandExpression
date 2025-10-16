@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Check Storage Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .data-box {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Check Stored Payment Data</h1>
+    
+    <button onclick="checkData()">Check LocalStorage</button>
+    <button onclick="goToReal()">Go to Real Payment Page</button>
+    <button onclick="manuallySetData()">Manually Set Test Data</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function checkData() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            // Check all relevant localStorage keys
+            const keys = ['real_card_info', 'payment_history', 'pending_payment'];
+            
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                const div = document.createElement('div');
+                div.className = 'data-box';
+                div.innerHTML = `<strong>${key}:</strong>\n${data ? JSON.stringify(JSON.parse(data), null, 2) : 'No data found'}`;
+                output.appendChild(div);
+            });
+            
+            // Also check if there's a popup blocker issue
+            const popupTest = window.open('', '', 'width=1,height=1');
+            if (popupTest) {
+                popupTest.close();
+                output.innerHTML += '<div class="data-box" style="background: #c8e6c9;">✅ Popups are allowed</div>';
+            } else {
+                output.innerHTML += '<div class="data-box" style="background: #ffcdd2;">❌ Popups are blocked - this might cause issues</div>';
+            }
+        }
+        
+        function goToReal() {
+            window.location.href = '/real';
+        }
+        
+        function manuallySetData() {
+            // Set the data from your successful payment
+            const cardInfo = {
+                tid: "StdpayCARDINIBillTst20250814112857605103",
+                orderNumber: "REAL_REG_1755138504774",
+                time: new Date().toLocaleString(),
+                paymentInfo: {
+                    cardName: "우리카드",
+                    cardNum: "540696*********3",
+                    applDate: "20250814",
+                    applTime: "112858"
+                }
+            };
+            
+            const paymentHistory = [{
+                number: 1,
+                amount: 100,
+                status: 'success',
+                time: new Date().toLocaleString(),
+                tid: "StdpayCARDINIBillTst20250814112857605103",
+                message: 'Card registered successfully - 100원 charged'
+            }];
+            
+            localStorage.setItem('real_card_info', JSON.stringify(cardInfo));
+            localStorage.setItem('payment_history', JSON.stringify(paymentHistory));
+            
+            alert('Data set! Now go to the Real Payment Page.');
+            checkData();
+        }
+        
+        // Check on load
+        window.onload = checkData;
+    </script>
+</body>
+</html>

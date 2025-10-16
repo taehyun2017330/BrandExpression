@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INICIS Modern Interface Test</title>
+    <script type="text/javascript" src="https://stgstdpay.inicis.com/stdjs/INIStdPay.js" charset="UTF-8"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #333; }
+        .method-box {
+            border: 2px solid #e0e0e0;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .method-box:hover {
+            border-color: #5f0080;
+            background: #f5f0ff;
+        }
+        button {
+            background-color: #5f0080;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #7a0099;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>INICIS 현대적 인터페이스 테스트</h1>
+        
+        <div class="warning">
+            <h3>⚠️ 중요</h3>
+            <p>BILLAUTH를 사용하면 구형 인증서 인터페이스가 나타납니다.</p>
+            <p>아래 방법들은 현대적 인터페이스를 유지하면서 정기결제를 구현하는 방법입니다.</p>
+        </div>
+
+        <div class="method-box">
+            <h3>방법 1: 일반결제로 카드 등록</h3>
+            <p>일반결제를 0원 또는 100원으로 진행하고, 결제 성공 후 카드 정보를 저장</p>
+            <p><code>acceptmethod: "HPP(1):below1000:va_receipt"</code></p>
+            <button onclick="method1()">일반결제로 카드 등록</button>
+        </div>
+
+        <div class="method-box">
+            <h3>방법 2: 정기결제 표시 + 일반결제</h3>
+            <p>offerPeriod를 사용해 정기결제임을 표시하고 일반결제 진행</p>
+            <p><code>offerPeriod: "M2"</code> (월 정기결제)</p>
+            <button onclick="method2()">정기결제 표시로 등록</button>
+        </div>
+
+        <div class="method-box">
+            <h3>방법 3: 카드 자동 저장 옵션</h3>
+            <p>일반결제 + 카드 저장 동의 옵션</p>
+            <p><code>acceptmethod: "HPP(1):below1000:cardautostore"</code></p>
+            <button onclick="method3()">카드 자동저장으로 등록</button>
+        </div>
+
+        <div class="method-box">
+            <h3>방법 4: 간편결제 정기결제</h3>
+            <p>카카오페이, 네이버페이 등 간편결제의 정기결제 기능 사용</p>
+            <button onclick="method4_kakao()">카카오페이 정기결제</button>
+            <button onclick="method4_naver()" style="margin-top: 5px;">네이버페이 정기결제</button>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <form id="payForm" method="POST" style="display:none;">
+        <input type="hidden" name="version" value="1.0">
+        <input type="hidden" name="gopaymethod" value="">
+        <input type="hidden" name="mid" value="INIBillTst">
+        <input type="hidden" name="oid" value="">
+        <input type="hidden" name="price" value="">
+        <input type="hidden" name="timestamp" value="">
+        <input type="hidden" name="signature" value="">
+        <input type="hidden" name="mKey" value="">
+        <input type="hidden" name="currency" value="WON">
+        <input type="hidden" name="goodname" value="">
+        <input type="hidden" name="buyername" value="테스터">
+        <input type="hidden" name="buyertel" value="01012345678">
+        <input type="hidden" name="buyeremail" value="test@test.com">
+        <input type="hidden" name="returnUrl" value="http://localhost:3000/modern-return">
+        <input type="hidden" name="closeUrl" value="http://localhost:3000/close.html">
+        <input type="hidden" name="acceptmethod" value="">
+        <input type="hidden" name="charset" value="UTF-8">
+        <input type="hidden" name="languageView" value="ko">
+        <input type="hidden" name="payViewType" value="overlay">
+        <input type="hidden" name="offerPeriod" value="">
+        <input type="hidden" name="merchantData" value="">
+    </form>
+
+    <script>
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        async function setupPayment(config) {
+            const timestamp = Date.now().toString();
+            const oid = (config.prefix || "ORDER") + "_" + timestamp;
+            
+            // Set form values
+            document.getElementsByName("gopaymethod")[0].value = config.gopaymethod || "";
+            document.getElementsByName("oid")[0].value = oid;
+            document.getElementsByName("price")[0].value = config.price || "100";
+            document.getElementsByName("timestamp")[0].value = timestamp;
+            document.getElementsByName("goodname")[0].value = config.goodname || "정기결제 등록";
+            document.getElementsByName("acceptmethod")[0].value = config.acceptmethod || "";
+            document.getElementsByName("offerPeriod")[0].value = config.offerPeriod || "";
+            document.getElementsByName("merchantData")[0].value = JSON.stringify({
+                type: config.type || "subscription",
+                method: config.method
+            });
+            
+            // Generate keys
+            const signKey = "SU5JTElURV9UUklQTEVERVNfS0VZU1RS";
+            const mKey = await sha256(signKey);
+            document.getElementsByName("mKey")[0].value = mKey;
+            
+            // Generate signature
+            const price = config.price || "100";
+            const signatureData = `oid=${oid}&price=${price}&timestamp=${timestamp}`;
+            const signature = await sha256(signatureData);
+            document.getElementsByName("signature")[0].value = signature;
+            
+            try {
+                INIStdPay.pay('payForm');
+            } catch (e) {
+                alert('오류: ' + e.message);
+            }
+        }
+
+        // 방법 1: 일반결제로 카드 등록 (100원 인증)
+        function method1() {
+            setupPayment({
+                prefix: "CARDREG",
+                price: "100",
+                goodname: "카드 등록 (100원 인증)",
+                acceptmethod: "HPP(1):below1000:va_receipt",
+                type: "card_registration",
+                method: "regular_payment"
+            });
+        }
+
+        // 방법 2: 정기결제 표시 + 일반결제
+        function method2() {
+            setupPayment({
+                prefix: "RECURRING",
+                price: "0",
+                goodname: "월 정기결제 등록",
+                acceptmethod: "HPP(1):below1000:va_receipt:centerCd(Y)",
+                offerPeriod: "M2", // 월 정기결제
+                type: "recurring_registration",
+                method: "regular_with_period"
+            });
+        }
+
+        // 방법 3: 카드 자동 저장
+        function method3() {
+            setupPayment({
+                prefix: "AUTOSTORE",
+                price: "100",
+                goodname: "카드 자동저장 등록",
+                acceptmethod: "HPP(1):below1000:cardautostore",
+                type: "card_autostore",
+                method: "autostore"
+            });
+        }
+
+        // 방법 4: 카카오페이 정기결제
+        function method4_kakao() {
+            setupPayment({
+                prefix: "KAKAO",
+                price: "0",
+                goodname: "카카오페이 정기결제",
+                gopaymethod: "onlykakaopay",
+                acceptmethod: "cardonly",
+                offerPeriod: "M2",
+                type: "kakao_recurring",
+                method: "kakaopay"
+            });
+        }
+
+        // 방법 4: 네이버페이 정기결제
+        function method4_naver() {
+            setupPayment({
+                prefix: "NAVER",
+                price: "0",
+                goodname: "네이버페이 정기결제",
+                gopaymethod: "onlynaverpay",
+                acceptmethod: "naverpayCard",
+                offerPeriod: "M2",
+                type: "naver_recurring",
+                method: "naverpay"
+            });
+        }
+    </script>
+</body>
+</html>

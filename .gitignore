@@ -1,0 +1,60 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+amond-backend/.env
+amond-frontend/.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+backend.log
+frontend.log
+
+# Dependencies
+node_modules/
+amond-backend/node_modules/
+amond-frontend/node_modules/
+
+# Next.js
+amond-frontend/.next/
+amond-frontend/out/
+amond-frontend/build/
+
+# TypeScript
+*.tsbuildinfo
+amond-backend/dist/
+amond-frontend/dist/
+
+# Testing
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build outputs
+build/
+dist/
+
+# Temporary files
+tmp/
+temp/
+
+# Database
+*.sql.backup
+*.db
+
+# AWS credentials (if any local files)
+*.pem
+credentials
+
+# Secrets and sensitive data
+*secret*
+*key.json
