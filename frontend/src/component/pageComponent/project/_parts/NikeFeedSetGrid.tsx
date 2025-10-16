@@ -88,7 +88,7 @@ export default function NikeFeedSetGrid({
                 <>
                   <CardMedia
                     component="img"
-                    src={`${s3ImageUrl}/${content.imageUrl}`}
+                    src={content.imageUrl.startsWith('http') ? content.imageUrl : `${s3ImageUrl}/${content.imageUrl}`}
                     alt={content.subject}
                     sx={{
                       width: '100%',

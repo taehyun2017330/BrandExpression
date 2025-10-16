@@ -40,7 +40,7 @@ export default function ContentDetailModal({
   viewType: "calendar" | "feed";
 }) {
   const imageUrl = content.imageUrl
-    ? `${s3ImageUrl}/${content.imageUrl}`
+    ? (content.imageUrl.startsWith('http') ? content.imageUrl : `${s3ImageUrl}/${content.imageUrl}`)
     : null;
 
   const parseHashtags = (text: string) => {

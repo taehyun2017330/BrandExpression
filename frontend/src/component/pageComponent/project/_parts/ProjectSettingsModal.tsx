@@ -394,7 +394,7 @@ export default function ProjectSettingsModal({
                       }}
                     >
                       <img
-                        src={`${s3ImageUrl}/${img}`}
+                        src={img.startsWith('http') ? img : `${s3ImageUrl}/${img}`}
                         alt={`preview-${idx}`}
                         style={{
                           width: "100%",

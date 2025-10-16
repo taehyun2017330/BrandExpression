@@ -146,7 +146,7 @@ function DetailModal({
   selectedContent: any;
 }) {
   const imageUrl = selectedContent.imageUrl
-    ? `${s3ImageUrl}/${selectedContent.imageUrl}`
+    ? (selectedContent.imageUrl.startsWith('http') ? selectedContent.imageUrl : `${s3ImageUrl}/${selectedContent.imageUrl}`)
     : null;
 
   const parseHashtags = (text: string) => {
