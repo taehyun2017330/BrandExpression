@@ -61,6 +61,15 @@ if [ -z "$OPENAI_KEY" ]; then
     echo -e "${RED}✗ OpenAI API key is required!${NC}"
     exit 1
 fi
+
+# Validate API key format
+if [[ "$OPENAI_KEY" == "sk-test-key" ]] || [[ "$OPENAI_KEY" == "your_openai_api_key_here" ]] || [[ ! "$OPENAI_KEY" =~ ^sk-[a-zA-Z0-9-]+ ]]; then
+    echo -e "${RED}✗ Invalid OpenAI API key format!${NC}"
+    echo -e "${YELLOW}  The key should start with 'sk-' followed by alphanumeric characters.${NC}"
+    echo -e "${YELLOW}  Get a valid key from: https://platform.openai.com/api-keys${NC}"
+    exit 1
+fi
+
 echo ""
 
 # Database Configuration

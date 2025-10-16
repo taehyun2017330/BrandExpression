@@ -1431,13 +1431,13 @@ router.post("/brand-summary", async function (req: any, res: any) {
       stack: error instanceof Error ? error.stack : 'No stack trace',
       name: error instanceof Error ? error.name : 'Unknown error type'
     });
-    
+
     // Check if headers were already sent
     if (res.headersSent) {
       console.error('❌ [BRAND-SUMMARY] Headers were already sent!');
       return;
     }
-    
+
     // Try to send error response with CORS headers
     try {
       const origin = req.headers.origin || 'https://mond.io.kr';
@@ -1446,8 +1446,17 @@ router.post("/brand-summary", async function (req: any, res: any) {
     } catch (e) {
       console.error('❌ [BRAND-SUMMARY] Could not set CORS headers in error handler');
     }
-    
-    res.status(500).json({ 
+
+    // Check if it's an OpenAI API key error
+    const errorMessage = error instanceof Error ? error.message : '';
+    if (errorMessage.includes('Incorrect API key') || errorMessage.includes('Invalid API key') || errorMessage.includes('401')) {
+      return res.status(400).json({
+        error: 'OpenAI API 키가 올바르지 않습니다. 설정을 확인해주세요.',
+        details: 'OpenAI API key is invalid or incorrect. Please check your .env file and ensure you have entered a valid API key from https://platform.openai.com/api-keys'
+      });
+    }
+
+    res.status(500).json({
       error: '브랜드 분석 중 오류가 발생했습니다.',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
