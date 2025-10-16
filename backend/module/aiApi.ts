@@ -1,7 +1,6 @@
 import OpenAI, { toFile } from "openai";
 import dotenv from "dotenv";
-import { saveFile } from "./localStorage";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { saveFile, getFile } from "./localStorage";
 dotenv.config();
 
 const client = new OpenAI({
@@ -101,20 +100,14 @@ export const gptImageEdit = async ({
   saveImageName: string;
 }) => {
   try {
-    // S3 URL에서 파일 경로 추출
-    const key = imageUrl.replace(
-      "https://amond-image.s3.ap-northeast-2.amazonaws.com/",
-      ""
-    );
+    // Extract file path from URL (works for both old S3 URLs and new local URLs)
+    let key = imageUrl;
+    if (imageUrl.includes("amond-image.s3.ap-northeast-2.amazonaws.com")) {
+      key = imageUrl.replace("https://amond-image.s3.ap-northeast-2.amazonaws.com/", "");
+    }
 
-    // S3에서 이미지 가져오기
-    const command = new GetObjectCommand({
-      Bucket: "amond-image",
-      Key: key,
-    });
-
-    const response = await s3.send(command);
-    const imageBuffer = await response.Body?.transformToByteArray();
+    // Get image from local storage
+    const imageBuffer = await getFile(key);
 
     if (!imageBuffer) {
       throw new Error("이미지를 가져올 수 없습니다.");
