@@ -9,7 +9,7 @@ import http from "http";
 import "./cron/imageRetry";
 // import { initBillingCron } from "./jobs/billingCron"; // 구독 기능 제거로 비활성화
 
-const PORT = 9988;
+const PORT = process.env.PORT || 9988;
 const app = express();
 
 // Trust proxy for production (needed for secure cookies behind reverse proxy)
