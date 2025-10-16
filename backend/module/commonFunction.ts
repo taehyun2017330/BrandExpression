@@ -180,6 +180,12 @@ export const loadPrompt = async (type: "1차" | "2차" | "이미지", body: any)
   let answer = "";
   const loadPromptSql = `SELECT prompt, required FROM aiPrompt WHERE id = ?;`;
   const loadPromptResult = await queryAsync(loadPromptSql, [promptId]);
+
+  if (!loadPromptResult || loadPromptResult.length === 0) {
+    console.error(`[loadPrompt] No prompt found with id: ${promptId}`);
+    throw new Error(`Prompt not found: ${promptId}`);
+  }
+
   answer = loadPromptResult[0].prompt;
   const required = loadPromptResult[0].required;
 

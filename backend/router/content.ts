@@ -449,7 +449,7 @@ router.post("/request", isLogin, async function (req, res) {
     }
 
     // Save moodboard to project if provided in projectData
-    if (projectData.moodboard && projectId) {
+    if (projectData && projectData.moodboard && projectId) {
       const moodboardUpdateSql = `UPDATE project SET moodboard = ? WHERE id = ?`;
       await queryAsync(moodboardUpdateSql, [projectData.moodboard, decodeHashId(projectId)]);
       console.log(`🎨 [CONTENT] Saved moodboard to project ${projectId} (${projectData.moodboard.length} chars)`);
@@ -473,9 +473,17 @@ router.post("/request", isLogin, async function (req, res) {
     // Parse selectedContentTypes from JSON
     let selectedContentTypes = [];
     try {
-      selectedContentTypes = brandData.selectedContentTypes ? JSON.parse(brandData.selectedContentTypes) : [];
+      if (brandData.selectedContentTypes) {
+        // Check if it's already an array
+        if (Array.isArray(brandData.selectedContentTypes)) {
+          selectedContentTypes = brandData.selectedContentTypes;
+        } else if (typeof brandData.selectedContentTypes === 'string') {
+          selectedContentTypes = JSON.parse(brandData.selectedContentTypes);
+        }
+      }
     } catch (e) {
       console.log('[CONTENT] Failed to parse selectedContentTypes:', e);
+      console.log('[CONTENT] Raw value:', brandData.selectedContentTypes);
       selectedContentTypes = [];
     }
     
@@ -1213,15 +1221,25 @@ async function checkLimitUpdate({
 
       // 없는 경우, 로그 생성
       if (limitCheckResult.length === 0) {
-        // For auto generation, use 'all' column
-        const columnName = requestType === 'auto' ? 'all' : requestType;
+        // Map requestType to valid column names
+        let columnName = 'all'; // default
+        if (requestType === 'caption') columnName = 'caption';
+        else if (requestType === 'image') columnName = 'image';
+        else if (requestType === 'auto' || requestType === 'manual_with_brand_data' || requestType === 'create') columnName = 'all';
+
         const insertSql = `INSERT INTO regenerateLog(fk_userId, \`${columnName}\`, createdAt) VALUES(?, ?, NOW())`;
         await queryAsync(insertSql, [userId, 1]);
       } else {
         // 있는 경우들, 로그 업데이트 (but don't check limits)
         console.log(`[RESEARCH MODE] User ${userId} regeneration counts - caption: ${limitCheckResult[0].caption}, image: ${limitCheckResult[0].image}, all: ${limitCheckResult[0].all}`);
 
-        const updateSql = `UPDATE regenerateLog SET \`${requestType}\` = \`${requestType}\` + 1
+        // Map requestType to valid column names
+        let columnName = 'all'; // default
+        if (requestType === 'caption') columnName = 'caption';
+        else if (requestType === 'image') columnName = 'image';
+        else if (requestType === 'auto' || requestType === 'manual_with_brand_data' || requestType === 'create') columnName = 'all';
+
+        const updateSql = `UPDATE regenerateLog SET \`${columnName}\` = \`${columnName}\` + 1
         WHERE fk_userId = ? && date(createdAt) = ?`;
         await queryAsync(updateSql, [
           userId,
