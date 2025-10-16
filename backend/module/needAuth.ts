@@ -1,6 +1,6 @@
 // isAdmin.ts
 import { Response, NextFunction } from "express";
-import { queryAsync } from "../module/commonFunction";
+import { queryAsync } from "./commonFunction";
 
 export function isAdmin(req: any, res: Response, next: NextFunction) {
   const grade = req.user?.grade;

@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState, useContext } from "react";
 import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
+import dayGridPlugin from "@fullcalendar/daygrid/index.js";
 import GridViewIcon from "@mui/icons-material/GridView";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { CenterProgress } from "@/component/ui/BoxStack";

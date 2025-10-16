@@ -11,7 +11,7 @@ echo "=========================================="
 echo ""
 
 # Check if .env file exists
-if [ ! -f "amond-backend/.env" ]; then
+if [ ! -f "backend/.env" ]; then
     echo "Error: .env file not found!"
     echo "Please run ./setup.sh first"
     exit 1
@@ -35,7 +35,7 @@ cleanup() {
 trap cleanup INT TERM
 
 echo -e "${BLUE}Starting Backend Server...${NC}"
-cd amond-backend
+cd backend
 npm run dev > ../backend.log 2>&1 &
 BACKEND_PID=$!
 cd ..
@@ -43,7 +43,7 @@ cd ..
 sleep 3
 
 echo -e "${BLUE}Starting Frontend Server...${NC}"
-cd amond-frontend
+cd frontend
 npm run dev > ../frontend.log 2>&1 &
 FRONTEND_PID=$!
 cd ..

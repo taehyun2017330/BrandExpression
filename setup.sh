@@ -107,7 +107,7 @@ CRYPTO_DELETED_KEY=$(openssl rand -base64 16 2>/dev/null || echo "deleted_$(date
 
 # Create backend .env
 echo -e "${BLUE}Creating configuration files...${NC}"
-cat > amond-backend/.env << EOF
+cat > backend/.env << EOF
 # Brand Expression - Research Prototype Configuration
 # Generated: $(date)
 
@@ -144,7 +144,7 @@ SES_FROM_EMAIL=noreply@example.com
 EOF
 
 # Create frontend .env.local
-cat > amond-frontend/.env.local << EOF
+cat > frontend/.env.local << EOF
 NEXT_PUBLIC_API_URL=http://localhost:9988
 EOF
 
@@ -158,11 +158,11 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 echo "Backend..."
-cd amond-backend && npm install --silent && cd .. || exit 1
+cd backend && npm install --silent && cd .. || exit 1
 echo -e "${GREEN}✓ Backend dependencies installed${NC}"
 
 echo "Frontend..."
-cd amond-frontend && npm install --silent && cd .. || exit 1
+cd frontend && npm install --silent && cd .. || exit 1
 echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 echo ""
 
@@ -186,9 +186,9 @@ if eval "$TEST_CMD" > /dev/null 2>&1; then
     # Run database initialization
     echo "Initializing database..."
     if [ -z "$DB_PASSWORD" ]; then
-        mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} < amond-backend/sql/00_init_database.sql 2>&1 | grep -v "Warning" || true
+        mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} < backend/sql/00_init_database.sql 2>&1 | grep -v "Warning" || true
     else
-        mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} -p${DB_PASSWORD} < amond-backend/sql/00_init_database.sql 2>&1 | grep -v "Warning" || true
+        mysql -h${DB_HOST} -P${DB_PORT} -u${DB_USER} -p${DB_PASSWORD} < backend/sql/00_init_database.sql 2>&1 | grep -v "Warning" || true
     fi
 
     echo -e "${GREEN}✓ Database initialized${NC}"
@@ -196,9 +196,9 @@ else
     echo -e "${YELLOW}! Could not connect to MySQL${NC}"
     echo "  You can initialize the database manually:"
     if [ -z "$DB_PASSWORD" ]; then
-        echo "  mysql -h${DB_HOST} -u${DB_USER} < amond-backend/sql/00_init_database.sql"
+        echo "  mysql -h${DB_HOST} -u${DB_USER} < backend/sql/00_init_database.sql"
     else
-        echo "  mysql -h${DB_HOST} -u${DB_USER} -p < amond-backend/sql/00_init_database.sql"
+        echo "  mysql -h${DB_HOST} -u${DB_USER} -p < backend/sql/00_init_database.sql"
     fi
 fi
 
@@ -217,8 +217,8 @@ echo -e "${YELLOW}Start the application:${NC}"
 echo "  ./start.sh"
 echo ""
 echo -e "${YELLOW}Or start manually:${NC}"
-echo "  Terminal 1: cd amond-backend && npm run dev"
-echo "  Terminal 2: cd amond-frontend && npm run dev"
+echo "  Terminal 1: cd backend && npm run dev"
+echo "  Terminal 2: cd frontend && npm run dev"
 echo ""
 echo -e "${YELLOW}Access:${NC}"
 echo "  Frontend: http://localhost:3000"

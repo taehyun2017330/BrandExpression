@@ -76,7 +76,7 @@ If you prefer to set up manually:
 ### Backend Setup
 
 ```bash
-cd amond-backend
+cd backend
 
 # Install dependencies
 npm install
@@ -86,7 +86,7 @@ cp ../.env.example .env
 # Edit .env with your configuration
 
 # Run database migrations
-mysql -u root -p amond < sql/initial_schema.sql
+mysql -u root -p amond < sql/00_init_database.sql
 
 # Start backend
 npm run dev
@@ -95,7 +95,7 @@ npm run dev
 ### Frontend Setup
 
 ```bash
-cd amond-frontend
+cd frontend
 
 # Install dependencies
 npm install
