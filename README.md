@@ -44,7 +44,23 @@ Brand Expression helps small business owners and brand managers articulate their
 mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'QkdwkWkd12@@';"
 ```
 
-## Quick Start
+## 🌐 Live Demo
+
+**Access the live application:** [https://yourusername.github.io/BrandExpression-3](https://yourusername.github.io/BrandExpression-3)
+
+No setup required! The application is fully deployed and ready to use. All API keys are securely managed on the backend.
+
+---
+
+## 🚀 Deployment
+
+Want to deploy your own instance? See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions on deploying to Railway (backend) and GitHub Pages (frontend).
+
+---
+
+## 💻 Local Development Setup
+
+For local development and testing:
 
 ### 1. Clone the repository
 
