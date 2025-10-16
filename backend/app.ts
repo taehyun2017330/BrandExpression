@@ -92,9 +92,16 @@ import uploadRouter from "./router/upload";
 import path from "path";
 import fs from "fs";
 
-// Serve static files from uploads directory
+// Serve static files from uploads directory with CORS headers
 const UPLOADS_PATH = fs.existsSync('/uploads') ? '/uploads' : path.join(__dirname, '../uploads');
-app.use("/uploads", express.static(UPLOADS_PATH));
+app.use("/uploads", (req, res, next) => {
+  // Set CORS headers for static files
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(UPLOADS_PATH));
 console.log(`Serving static files from: ${UPLOADS_PATH}`);
 
 app.use("/auth", authRouter);
