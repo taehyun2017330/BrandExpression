@@ -131,7 +131,7 @@ router.post("/:brandId/feedset", isLogin, async function (req, res) {
       sessionName,
       brand.category,
       brand.url,
-      entireDirectoryList.join(","),
+      imageFileNames.join(","), // Changed from entireDirectoryList
       reasonList.join(","),
       brand.description,
       userId,
