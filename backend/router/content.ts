@@ -6,7 +6,7 @@ import {
   loadPrompt,
   queryAsync,
 } from "../module/commonFunction";
-import { deleteS3, getDownloadUrl, uploadPresigned } from "../module/aws";
+import { deleteFile } from "../module/localStorage";
 import { isLogin } from "../module/needAuth";
 import {
   gptChatCompletion,
@@ -421,7 +421,7 @@ router.put("/project", isLogin, async function (req, res) {
 
     if (deletedImageList.length !== 0) {
       for (const image of deletedImageList) {
-        await deleteS3(image);
+        await deleteFile(image);
       }
     }
 
@@ -1030,7 +1030,7 @@ router.put("/regenerate", isLogin, async function (req, res) {
 
     if (requestType === "image") {
       const { imageUrl } = contentResult[0];
-      await deleteS3(imageUrl);
+      await deleteFile(imageUrl);
       const newImageUrl = await createImage(contentId);
       
       // Track the content edit
@@ -1132,7 +1132,7 @@ router.put("/regenerate", isLogin, async function (req, res) {
         ]);
 
         const { imageUrl } = contentResult[0];
-        await deleteS3(imageUrl);
+        await deleteFile(imageUrl);
         const newImageUrl = await createImage(contentId);
         
         // Track the content edit

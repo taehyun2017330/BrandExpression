@@ -88,6 +88,14 @@ import billPaymentRouter from "./router/billPayment";
 import inicisWebstandardRouter from "./router/inicisWebstandard";
 import brandRouter from "./router/brand";
 import singleImageRouter from "./router/singleImage";
+import uploadRouter from "./router/upload";
+import path from "path";
+import fs from "fs";
+
+// Serve static files from uploads directory
+const UPLOADS_PATH = fs.existsSync('/uploads') ? '/uploads' : path.join(__dirname, '../uploads');
+app.use("/uploads", express.static(UPLOADS_PATH));
+console.log(`Serving static files from: ${UPLOADS_PATH}`);
 
 app.use("/auth", authRouter);
 app.use("/admin", adminRouter);
@@ -97,6 +105,7 @@ app.use("/bill-payment", billPaymentRouter);
 app.use("/inicis-webstandard", inicisWebstandardRouter);
 app.use("/brand", brandRouter);
 app.use("/api/ai", singleImageRouter);
+app.use("/upload", uploadRouter);
 
 app.get("/", (req, res) => {
   res.status(200).send("OK");

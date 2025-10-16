@@ -5,8 +5,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Use Railway volume mount path for persistent storage, or local uploads folder
-const STORAGE_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH
-  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+// Railway volume is mounted at /uploads, so use it directly if it exists
+const STORAGE_PATH = fs.existsSync('/uploads')
+  ? '/uploads'
   : path.join(__dirname, '../../uploads');
 
 // Ensure storage directory exists

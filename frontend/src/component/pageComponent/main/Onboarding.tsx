@@ -246,27 +246,33 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         });
       }
 
-      const { projectId, presignedUrlList, userId } = response.data;
-      
+      const { projectId, userId } = response.data;
+
       // Only upload images if not auto-generating
       if (!autoGenerate && selectedImageFiles.length > 0) {
-        // presignedUrlList 내에 있는 url로 s3에 이미지 업로드
-        await Promise.all(
-          presignedUrlList.map(async (url: string, index: number) => {
-            const response = await fetch(url, {
-              method: "PUT",
-              body: selectedImageFiles[index],
-              headers: {
-                "Content-Type": selectedImageFiles[index].type || "application/octet-stream",
-              },
-            });
-            
-            if (!response.ok) {
-              console.error(`Failed to upload image ${index}:`, response.status, response.statusText);
-              throw new Error(`Failed to upload image ${index}`);
-            }
-          })
-        );
+        // Upload images directly to backend
+        const formData = new FormData();
+        formData.append('directory', 'user/project');
+
+        selectedImageFiles.forEach((file: File) => {
+          formData.append('files', file);
+        });
+
+        const uploadResponse = await apiCall({
+          url: "/upload/multiple",
+          method: "post",
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        if (!uploadResponse.data.success) {
+          console.error('Failed to upload images:', uploadResponse.data);
+          throw new Error('Failed to upload images');
+        }
+
+        console.log('Images uploaded successfully:', uploadResponse.data.urls);
       }
 
       if (autoGenerate) {

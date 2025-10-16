@@ -1,6 +1,6 @@
 import OpenAI, { toFile } from "openai";
 import dotenv from "dotenv";
-import { s3, uploadPresigned } from "./aws";
+import { saveFile } from "./localStorage";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 dotenv.config();
 
@@ -153,24 +153,16 @@ export const gptImageEdit = async ({
 
       const fileName = `${saveImageName}.${imageType}`;
 
-      // S3 업로드를 위한 presigned URL 생성
-      const { url, entireDirectory } = await uploadPresigned({
+      // Save to local storage
+      const imageUrl = await saveFile(
+        imageBuffer,
         fileName,
-        directory: "user/project/ai-generated",
-      });
+        "user/project/ai-generated"
+      );
 
-      // presigned URL을 사용하여 이미지 업로드
-      await fetch(url, {
-        method: "put",
-        body: imageBuffer,
-        headers: {
-          "Content-Type": `image/${imageType}`,
-        },
-      });
-
-      // S3 URL과 토큰 사용량 반환
+      // Return image URL and token usage
       return {
-        imageUrl: entireDirectory,
+        imageUrl: imageUrl,
         token: editResponse.usage?.total_tokens || 0,
       };
     } else {
@@ -232,24 +224,16 @@ export const gptImageCreate = async ({
 
       const fileName = `${saveImageName}.${imageType}`;
 
-      // S3 업로드를 위한 presigned URL 생성
-      const { url, entireDirectory } = await uploadPresigned({
+      // Save to local storage
+      const imageUrl = await saveFile(
+        imageBuffer,
         fileName,
-        directory: "user/project/ai-generated",
-      });
+        "user/project/ai-generated"
+      );
 
-      // presigned URL을 사용하여 이미지 업로드
-      await fetch(url, {
-        method: "put",
-        body: imageBuffer,
-        headers: {
-          "Content-Type": `image/${imageType}`,
-        },
-      });
-
-      // S3 URL과 토큰 사용량 반환
+      // Return image URL and token usage
       return {
-        imageUrl: entireDirectory,
+        imageUrl: imageUrl,
         token: createResponse.usage?.total_tokens || 0,
       };
     } else {

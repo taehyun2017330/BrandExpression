@@ -198,28 +198,28 @@ export default function ProjectSettingsModal({
       // 2. 새로 추가된 이미지 처리
       let dbImageList = [...keptImages];
       if (newImages.length > 0) {
-        const response = await apiCall({
-          url: "/content/project/edit/image",
+        // Upload images directly to backend
+        const formData = new FormData();
+        formData.append('directory', 'user/project');
+
+        newImages.forEach((file: File) => {
+          formData.append('files', file);
+        });
+
+        const uploadResponse = await apiCall({
+          url: "/upload/multiple",
           method: "post",
-          body: {
-            imageNameList: newImages.map((image) => image.name),
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
           },
         });
 
-        const { presignedUrlList, entireDirectoryList } = response.data;
-        // presignedUrlList 내에 있는 url로 s3에 이미지 업로드
-        await Promise.all(
-          presignedUrlList.map(async (url: string, index: number) => {
-            await fetch(url, {
-              method: "put",
-              body: newImages[index],
-              headers: {
-                "Content-Type": newImages[index].type,
-              },
-            });
-          })
-        );
-        dbImageList = [...dbImageList, ...entireDirectoryList];
+        if (!uploadResponse.data.success) {
+          throw new Error('Failed to upload images');
+        }
+
+        dbImageList = [...dbImageList, ...uploadResponse.data.urls];
       }
 
       // 3. 프로젝트 정보 업데이트

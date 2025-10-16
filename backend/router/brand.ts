@@ -107,35 +107,20 @@ router.post("/:brandId/feedset", isLogin, async function (req, res) {
     }
 
     const brand = brandCheck[0];
-    
-    // Create presigned URLs for images
-    const { uploadPresigned } = require("../module/aws");
-    const presignedUrlList = [];
-    const entireDirectoryList = [];
-    
+
+    // No longer need presigned URLs - frontend uploads directly to /upload endpoint
+    // We just need to track the expected file names
+    const imageFileNames = [];
+
     if (autoGenerate) {
-      // For auto-generation, create placeholder entries
+      // For auto-generation, no images to track yet
       const placeholderCount = imageCount || 4;
       for (let i = 0; i < placeholderCount; i++) {
-        // Generate placeholder filenames
-        const fileName = `auto_generated_${Date.now()}_${i}.png`;
-        const { url, entireDirectory } = await uploadPresigned({
-          fileName,
-          directory: "user/project",
-        });
-        presignedUrlList.push(url);
-        entireDirectoryList.push(entireDirectory);
+        imageFileNames.push(`placeholder_${i}`);
       }
     } else {
-      // Normal image upload flow
-      for (const imageName of imageNameList) {
-        const { url, entireDirectory } = await uploadPresigned({
-          fileName: imageName,
-          directory: "user/project",
-        });
-        presignedUrlList.push(url);
-        entireDirectoryList.push(entireDirectory);
-      }
+      // Track the file names that will be uploaded
+      imageFileNames.push(...imageNameList);
     }
 
     const sessionName = `${brand.name} - ${moment().format('YYYY-MM-DD HH:mm')}`;
@@ -169,7 +154,9 @@ router.post("/:brandId/feedset", isLogin, async function (req, res) {
 
     res.status(200).json({
       projectId: hashId,
-      presignedUrlList,
+      userId: userId,
+      imageFileNames: imageFileNames,
+      autoGenerate: autoGenerate,
     });
   } catch (e: any) {
     console.error("Feed set creation error:", e);
