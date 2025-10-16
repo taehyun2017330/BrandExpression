@@ -1,7 +1,8 @@
 // Helper to get the correct path with basePath
 export const getBasePath = () => {
-  // Return empty string because Next.js handles basePath automatically
-  return '';
+  // In production (GitHub Pages), use /BrandExpression base path
+  // In development, use empty string
+  return process.env.NODE_ENV === 'production' ? '/BrandExpression' : '';
 };
 
 export const withBasePath = (path: string) => {
@@ -9,8 +10,12 @@ export const withBasePath = (path: string) => {
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('//')) {
     return path;
   }
-  
-  // Next.js automatically handles basePath when it's set in next.config.js
-  // So we just return the path as-is
-  return path;
+
+  // Add basePath for static assets in production
+  const basePath = getBasePath();
+
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+
+  return basePath ? `${basePath}/${cleanPath}` : `/${cleanPath}`;
 };
