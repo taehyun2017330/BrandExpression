@@ -5,6 +5,8 @@ const nextConfig = {
   poweredByHeader: false,
   // Configure for GitHub Pages deployment
   output: 'export',
+  basePath: '/BrandExpression',
+  assetPrefix: '/BrandExpression',
   images: {
     unoptimized: true, // Required for static export
   },
@@ -15,8 +17,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // No basePath - app will be at subdomain root
-  // basePath: '/service',
 }
 
 module.exports = nextConfig
